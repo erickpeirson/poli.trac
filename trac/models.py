@@ -35,6 +35,17 @@ class Politician(Base):
 
     sponsored_bills = relationship('Sponsorship', back_populates='politician')
     committees = relationship('CommitteeMembership', back_populates='politician')
+    votes = relationship('Vote', back_populates='politician')
+
+    buiguide_id = Column(String(8), unique=True)
+    gpo_id = Column(Integer, unique=True)
+    lis_id = Column(Integer, unique=True)
+
+    REPUBLICAN = 'R'
+    DEMOCRAT = 'D'
+    INDEPENDENT = 'I'
+    party = Column(String(1))
+    state = Column(String(2))
 
 
 class BillSubject(Base):
@@ -133,6 +144,7 @@ class Bill(Base):
     sponsors = relationship('Sponsorship', back_populates='bill')
     actions = relationship('Action', back_populates='bill')
     amendments = relationship("Amendment", back_populates='bill')
+    motions = relationship('Motion', back_populates='bill')
 
 
 # TODO: support amendments to amendments.
@@ -147,6 +159,8 @@ class Amendment(Base):
     description = Column(Text)
     purpose = Column(Text)
 
+    actions = relationship("Amendment", back_populates='amendment')
+    motions = relationship('Motion', back_populates='amendment')
 
 class Committee(Base):
     __tablename__ = 'committee'
@@ -217,6 +231,8 @@ class Action(Base):
 
     bill_id = Column(Integer, ForeignKey('bill.id'))
     bill = relationship("Bill", back_populates='actions')
+    amendment_id = Column(Integer, ForeignKey('amendment.id'))
+    amendment = relationship("Amendment", back_populates='actions')
 
     committee_id = Column(String(6), ForeignKey('committee.code'))
     committee = relationship('Committee', back_populates='actions')
@@ -233,3 +249,45 @@ class Action(Base):
 
     https://github.com/usgpo/bill-status/blob/master/BILLSTATUS-XML_User_User-Guide.md
     """
+
+
+class Motion(Base):
+    __tablename__ = 'motion'
+    id = Column(Integer, primary_key=True)
+    votes = relationship('Vote', back_populates='motion')
+
+    congress = Column(Integer)
+    session = Column(Integer)
+    congress_year = Column(Integer)
+    vote_number = Column(Integer)
+    vote_date = Column(Date)
+    modify_date = Column(Date)
+    question_text = Column(Text)
+    question = Column(String(50))
+    document_text = Column(Text)
+    result_text = Column(Text)
+    result = Column(String(50))
+    title = Column(Text)
+    majority_requirement = Column(String(10))
+
+    bill_id = Column(Integer, ForeignKey('bill.id'))
+    bill = relationship('Bill', back_populates='motions')
+
+    amendment_id = Column(Integer, ForeignKey('amendment.id'))
+    amendment = relationship('Amendment', back_populates='motions')
+
+
+
+class Vote(Base):
+    __tablename__ = 'vote'
+    id = Column(Integer, primary_key=True)
+    politician_id = Column(Integer, ForeignKey('politician.id'))
+    politician = relationship('Politician', back_populates='votes')
+
+    YEA = 'yea'
+    NAY = 'nay'
+    ABSTAIN = 'abs'
+    vote_cast = Column(String(3))
+
+    motion_id = Column(Integer, ForeignKey('motion.id'))
+    motion = relationship('Motion', back_populates='votes')
